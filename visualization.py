@@ -3,8 +3,6 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 def visualize(model, steps=50, pause=0.1):
     plt.ion()
     fig, ax = plt.subplots(figsize=(20, 20))
