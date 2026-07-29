@@ -21,7 +21,7 @@ class Colony(mesa.Model):
         self._place_food()
 
     def _generate_foodmap(self, seed=0):
-        ''' generate 2d food map using perlin noise '''
+        ''' generate foodmap using perlin noise '''
         foodmap = np.zeros((self.width, self.height))
     
         noise = PerlinNoise(octaves=4, seed=seed)
@@ -45,7 +45,7 @@ class Colony(mesa.Model):
             noise_value = self.foodmap[x][y]
             food_amt = self._scale_noise_to_food(noise_value)
             
-            if food_amt > 2:
+            if food_amt > 0:
                 growth_rate = 1.0 + (food_amt / 10) * 0.5  # 1.0 to 1.5
                 FoodSource.create_agents(
                     self, 
@@ -58,7 +58,12 @@ class Colony(mesa.Model):
     def _scale_noise_to_food(self, noise_value):
         ''' convert noise value (-1 to 1) to a food amount (0 to 10) '''
         max_food = 10
-        food_amt = ((noise_value + 1) / 2) * max_food
+        normalized = (noise_value + 1) / 2  # change range from (-1 to 1) to (0 to 1)
+        power = 2.5                         # higher power -> more barren areas
+        scaled = normalized ** power        # 
+        if scaled < 0.1:
+            return 0
+        food_amt = scaled * max_food
         return food_amt
 
     def step(self):
