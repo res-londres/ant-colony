@@ -8,8 +8,7 @@ class Ant(CellAgent):
 
     def move(self):
         cell = self.cell.neighborhood.select_random_cell()
-        if cell.is_empty:
-            self.cell = cell
+        self.cell = cell
 
 class Queen(Ant):
     def __init__(self, model, cell):

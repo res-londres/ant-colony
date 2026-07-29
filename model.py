@@ -1,16 +1,69 @@
 import mesa
+import numpy as np
 from mesa.discrete_space import OrthogonalMooreGrid
+from perlin_noise import PerlinNoise
 
 from agents import *
 
 class Colony(mesa.Model):
-    def __init__(self, ants_num, width, height, queen_num=1, seed=None):
+    def __init__(self, ants_num, width, height=None, queen_num=1, seed=None, terrain_seed=0):
         super().__init__(seed=seed)
-        self.grid = OrthogonalMooreGrid((width, height), torus=True, random=self.random)
+        self.width = width
+        self.height = width if height is None else height
         self.ants_num = ants_num
         self.queen_num = queen_num
+        self.grid = OrthogonalMooreGrid((self.width, self.height), torus=True, random=self.random)
+        
         Ant.create_agents(self, self.ants_num, self.random.choices(self.grid.all_cells.cells, k=self.ants_num))
         Queen.create_agents(self, self.queen_num, self.random.choices(self.grid.all_cells.cells, k=self.queen_num))
 
+        self.foodmap = self._generate_foodmap(seed=terrain_seed)
+        self._place_food()
+
+    def _generate_foodmap(self, seed=0):
+        ''' generate 2d food map using perlin noise '''
+        foodmap = np.zeros((self.width, self.height))
+    
+        noise = PerlinNoise(octaves=4, seed=seed)
+        
+        scale = 0.01
+        for x in range(self.width):
+            for y in range(self.height):
+                noise_value = noise([x * scale, y * scale])
+                foodmap[x][y] = noise_value
+
+        min_val = foodmap.min()
+        max_val = foodmap.max()
+        foodmap = (foodmap - min_val) / (max_val - min_val) * 2 - 1
+    
+        return foodmap
+
+    def _place_food(self):
+        ''' place FoodSource agents on cells based on terrain value '''
+        for cell in self.grid.all_cells.cells:
+            x, y = cell.coordinate
+            noise_value = self.foodmap[x][y]
+            food_amt = self._scale_noise_to_food(noise_value)
+            
+            if food_amt > 2:
+                growth_rate = 1.0 + (food_amt / 10) * 0.5  # 1.0 to 1.5
+                FoodSource.create_agents(
+                    self, 
+                    1, 
+                    cell, 
+                    max_food=food_amt,
+                    growth_rate=growth_rate
+                )
+
+    def _scale_noise_to_food(self, noise_value):
+        ''' convert noise value (-1 to 1) to a food amount (0 to 10) '''
+        max_food = 10
+        food_amt = ((noise_value + 1) / 2) * max_food
+        return food_amt
+
     def step(self):
-        self.agents.shuffle_do('move')
+        food = self.agents.select(lambda a: isinstance(a, FoodSource))
+        ants = self.agents.select(lambda a: isinstance(a, Ant))
+
+        food.do('grow')
+        ants.shuffle_do('move')
