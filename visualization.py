@@ -8,14 +8,28 @@ from agents import *
 def animate(model, steps=50, pause=0.1):
     plt.ion()
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 20))
-    
-    for step in range(steps):
-        model.step()
-        
-        ants_plot(model, ax1, step)
-        food_plot(model, ax2, step)
-        
-        plt.pause(pause)
+
+    paused = False
+    step = 0
+
+    def handle_key(event):
+        nonlocal paused
+        if event.key == ' ':
+            paused = not paused 
+
+    fig.canvas.mpl_connect('key_press_event', handle_key)
+      
+    while step < steps:
+        if not paused:
+            model.step()
+            
+            ants_plot(model, ax1, step)
+            food_plot(model, ax2, step)
+            
+            plt.pause(pause)
+            step += 1
+        else:
+            plt.pause(0.1)
     
     plt.ioff()
     plt.show()
