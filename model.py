@@ -43,10 +43,10 @@ class Colony(mesa.Model):
         for cell in self.grid.all_cells.cells:
             x, y = cell.coordinate
             noise_value = self.foodmap[x][y]
-            food_amt = self._scale_noise_to_food(noise_value)
+            food_amt = self._scale_noise_to_food(noise_value) # 1 to 10
             
             if food_amt > 0:
-                growth_rate = 1.0 + (food_amt / 10) * 0.5  # 1.0 to 1.5
+                growth_rate = 1.0 + (food_amt / 10) * 0.05 # 1.0 to 1.05
                 FoodSource.create_agents(
                     self, 
                     1, 
@@ -59,7 +59,7 @@ class Colony(mesa.Model):
         ''' convert noise value (-1 to 1) to a food amount (0 to 10) '''
         max_food = 10
         normalized = (noise_value + 1) / 2  # change range from (-1 to 1) to (0 to 1)
-        power = 2.5                         # higher power -> more barren areas
+        power = 3.00                        # higher power -> more barren areas
         scaled = normalized ** power        # 
         if scaled < 0.1:
             return 0
@@ -67,8 +67,9 @@ class Colony(mesa.Model):
         return food_amt
 
     def step(self):
-        food = self.agents.select(lambda a: isinstance(a, FoodSource))
-        ants = self.agents.select(lambda a: isinstance(a, Ant))
+        self.agents_by_type[FoodSource].do('grow')
+        self.agents_by_type[Ant].shuffle_do('manage_action')
+        dead = self.agents_by_type[Ant].select(lambda a: a.energy <= 0)
+        for agent in dead:
+            agent.remove()
 
-        food.do('grow')
-        ants.shuffle_do('move')
