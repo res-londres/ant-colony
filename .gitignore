@@ -19,3 +19,4 @@ env/
 *.tmp
 
 test
+.continue

@@ -68,8 +68,10 @@ class Colony(mesa.Model):
 
     def step(self):
         self.agents_by_type[FoodSource].do('grow')
-        self.agents_by_type[Ant].shuffle_do('manage_action')
-        dead = self.agents_by_type[Ant].select(lambda a: a.energy <= 0)
+        ants = self.agents.select(lambda a: isinstance(a, Ant))
+        ants.shuffle_do('manage_action')
+        dead = ants.select(lambda a: a.energy <= 0)
         for agent in dead:
             agent.remove()
+
 

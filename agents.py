@@ -1,17 +1,20 @@
 from mesa.discrete_space import CellAgent
 
 class Ant(CellAgent):
-    def __init__(self, model, cell):
+    def __init__(self, model, cell, energy=50, appetite=2, vision=2):
         super().__init__(model)
         self.role = None
         self.cell = cell
-        self.energy = 50 # test val
+        self.energy = energy
+        self.appetite = appetite
+        self.vision = vision
+        self.goal = None
 
     def move(self):
         best_food = 0
         target_cell = None
         
-        for cell in [self.cell] + list(self.cell.neighborhood):
+        for cell in self.cell.get_neighborhood(self.vision, include_center=True):
             for agent in cell.agents:
                 if isinstance(agent, FoodSource):
                     if agent.food_amt > best_food:
@@ -34,8 +37,7 @@ class Ant(CellAgent):
         for agent in self.cell.agents:
             if isinstance(agent, FoodSource):
                 if agent.food_amt > 0.01:
-                    max_consumption = 2 # todo: add appetite val for each ant
-                    consumed_food = min(agent.food_amt - 0.01, max_consumption) # test consumption val
+                    consumed_food = min(agent.food_amt - 0.01, self.appetite) 
                     agent.food_amt -= consumed_food
                     self.energy += consumed_food
     
